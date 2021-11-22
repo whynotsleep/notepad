@@ -54,7 +54,6 @@ ipcMain.on('render-event',(event, arg) => {
   } else if (arg === 'close') {
     mainWindow.close()
   }
-  event.sender.send('asynchronous-reply', 'pong'); // 返回一个'pong'
 })
 
 app.on('ready', createWindow)

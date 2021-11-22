@@ -10,7 +10,7 @@ export default class Category {
     }
 
     getList(label = '') {
-        const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date FROM ${this.tableName} WHERE label LIKE '%${label}%'`)
+        const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date FROM ${this.tableName} WHERE label LIKE '%${label}%' ORDER BY update_date DESC`)
         return stmt.all()
     }
 

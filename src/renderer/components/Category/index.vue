@@ -1,5 +1,5 @@
 <template>
-  <div class="categorys" v-contextmenu:listContextmenu>
+  <div class="categorys">
     <!-- <div class="cate-add">
       <el-button type="primary" icon="el-icon-plus" circle size="mini" @click="createNew"></el-button>
       <span class="cate-add-label">新建分类</span>
@@ -40,13 +40,13 @@
         </div>
       </li>
     </ul>
-    <v-contextmenu ref="listContextmenu">
+    <!-- <v-contextmenu ref="listContextmenu">
       <v-contextmenu-item @click="createNew">新建分类</v-contextmenu-item>
     </v-contextmenu>
     <v-contextmenu ref="itemContextmenu">
       <v-contextmenu-item>重命名</v-contextmenu-item>
       <v-contextmenu-item @click="delCate">删除</v-contextmenu-item>
-    </v-contextmenu>
+    </v-contextmenu> -->
   </div>
 </template>
 

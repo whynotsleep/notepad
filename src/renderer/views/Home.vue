@@ -331,18 +331,23 @@ export default {
     padding: 0;
     flex-wrap: nowrap;
     background-color: transparent;
-    .w-e-bar-item {
-      height: 28px;
-      padding: 0;
-      background: #efefef;
-      // border-right: 1px solid #bbb;
+    > .w-e-bar-item {
       &:first-of-type, &:first-of-type button {
         border-radius: 6px 0 0 6px;
       }
       &:last-of-type, &:last-of-type button {
         border-radius: 0 6px 6px 0;
       }
+    }
+    .w-e-bar-item {
+      height: 28px;
+      padding: 0;
+      background: #efefef;
+      -webkit-app-region: no-drag;
+      // border-right: 1px solid #bbb;
+
       button {
+        width: 100%;
         height: 28px;
         padding: 0 8px;
         line-height: 28px;
@@ -353,6 +358,11 @@ export default {
           background-color: #fff;
           color: #333;
         }
+      }
+      .w-e-bar-item-menus-container {
+        margin-top: 26px;
+        left: auto;
+        right: 0;
       }
     }
 

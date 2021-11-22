@@ -1,5 +1,5 @@
 <template>
-  <div class="articles" v-contextmenu:listContextmenu>
+  <div class="articles">
     <div class="search">
       <el-input
         placeholder="请输入搜索内容"
@@ -32,13 +32,13 @@
         <!-- <div class="article-item-line" v-if="index < articleList.length - 1"></div> -->
       </li>
     </ul>
-    <v-contextmenu ref="listContextmenu">
+    <!-- <v-contextmenu ref="listContextmenu">
       <v-contextmenu-item @click="createNew">新建文章</v-contextmenu-item>
     </v-contextmenu>
     <v-contextmenu ref="itemContextmenu">
       <v-contextmenu-item>重命名</v-contextmenu-item>
       <v-contextmenu-item @click="delOld">删除</v-contextmenu-item>
-    </v-contextmenu>
+    </v-contextmenu> -->
   </div>
 </template>
 
@@ -237,9 +237,9 @@ export default {
     }
 
     .article-item-label {
-      max-height: 40px;
-      line-height: 20px;
-      font-size: 14px;
+      max-height: 36px;
+      line-height: 18px;
+      font-size: 12px;
       overflow: hidden;
       word-break: break-all;
       display: -webkit-box;
@@ -251,9 +251,9 @@ export default {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 5px;
-      font-size: 12px;
-      line-height: 20px;
+      margin-top: 8px;
+      font-size: 10px;
+      line-height: 14px;
     }
     .article-item-line {
       position: absolute;
