@@ -1,6 +1,6 @@
 import Article from './Article'
 import Category from './Category'
-const db = require('better-sqlite3')('notepad.db', { verbose: console.log })
+const db = require('better-sqlite3')('notepad.db', { verbose: undefined})
 const fs = require('fs')
 const path = require('path')
 const install_sql = fs.readFileSync(path.join(__static, '/install.sql'), 'utf8')

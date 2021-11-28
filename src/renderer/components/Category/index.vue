@@ -8,7 +8,6 @@
       <li
         class="cate-item"
         :class="{ active: activeId === item.cate_id }"
-        v-contextmenu:itemContextmenu
         v-for="item in list"
         :key="item.cate_id"
         :title="item.label"
@@ -19,11 +18,11 @@
       >
         <div class="cate-item-info" v-if="!updateItem || updateItem.cate_id !== item.cate_id">
           <span class="cate-item-label">{{ item.label }}</span>
-          <i
+          <!-- <i
             class="el-icon-close cate-item-del"
             title="删除"
             @click="del(item)"
-          ></i>
+          ></i> -->
         </div>
         <div v-else>
           <el-input
@@ -40,13 +39,6 @@
         </div>
       </li>
     </ul>
-    <!-- <v-contextmenu ref="listContextmenu">
-      <v-contextmenu-item @click="createNew">新建分类</v-contextmenu-item>
-    </v-contextmenu>
-    <v-contextmenu ref="itemContextmenu">
-      <v-contextmenu-item>重命名</v-contextmenu-item>
-      <v-contextmenu-item @click="delCate">删除</v-contextmenu-item>
-    </v-contextmenu> -->
   </div>
 </template>
 
@@ -87,17 +79,23 @@ export default {
   methods: {
     ...mapMutations(['updateCurrentCate']),
 
-    init() {
-      this.getList();
-      const first = this.list[0]
-      first && this.selectCate(first)
+    async init() {
+      await this.getList();
+        // 默认选择项
+      const defaultCate = localStorage.getItem('default-cate')
+      if(!defaultCate)return
+      const selected = this.list.filter(cate => String(cate.cate_id) == String(defaultCate))
+      selected && selected[0] && this.selectCate(selected[0], true)
     },
 
-    selectCate(item) {
+    selectCate(item, notUser) {
       if( this.activeId === item.cate_id ) return
+
       this.activeId = item.cate_id;
       this.updateCurrentCate(item)
-      this.$channel.$emit('select-cate', item)
+      if(!notUser) {
+        localStorage.setItem('default-cate', item.cate_id)
+      }
     },
 
     bodyClick(){
@@ -106,12 +104,11 @@ export default {
       }
     },
 
-    getList() {
+    async getList() {
       try {
-        this.list = this.$db.category.getList();
-        console.log("分类列表", this.list);
+        this.list = await this.$db.category.getList()
       } catch (err) {
-        console.err(err);
+        console.err(err)
       }
     },
 
@@ -125,19 +122,19 @@ export default {
       }
     },
 
-    createNew() {
+    async createNew() {
       // const id = this.getSameLabelCount('新建分类')
-      const item = this.add("新建分类");
+      const item = await this.add("新建分类");
       this.list.unshift(item);
       this.openEdit(item);
     },
 
-    add(label) {
+    async add(label) {
       if (!label) return null;
       try {
-        const info = this.$db.category.add(label);
+        const info = await this.$db.category.add(label);
         if (info.changes >= 1) {
-          const data = this.$db.category.get(info.lastInsertRowid);
+          const data = await this.$db.category.get(info.lastInsertRowid);
           return data;
         }
       } catch (err) {
@@ -153,10 +150,9 @@ export default {
       })
     },
 
-    del(item) {
+    async del(item) {
       try {
-        const info = this.$db.category.del(item.cate_id);
-        console.log(info);
+        const info = await this.$db.category.del(item.cate_id);
         if (info.changes > 0) {
           this.getList();
         }
@@ -193,9 +189,9 @@ export default {
     },
 
     // 修改
-    update(cate_id, label) {
+    async update(cate_id, label) {
       try {
-        const info = this.$db.category.update(
+        const info = await this.$db.category.update(
           cate_id,
           label
         );

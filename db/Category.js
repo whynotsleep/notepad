@@ -10,45 +10,92 @@ export default class Category {
     }
 
     getList(label = '') {
-        const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date FROM ${this.tableName} WHERE label LIKE '%${label}%' ORDER BY update_date DESC`)
-        return stmt.all()
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date FROM ${this.tableName} WHERE label LIKE '%${label}%' ORDER BY update_date DESC`)
+                const data = stmt.all()
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     add(label) {
         const datetime = moment().format('YYYY-MM-DD hh:mm:ss')
-        const stmt = this.db.prepare(`INSERT INTO ${this.tableName} (label,create_date,update_date) VALUES (?, ?, ?)`)
-        const info = stmt.run(label, datetime, datetime)
-        // changes 此操作插入、更新或删除的总行数
-        // lastInsertRowid 插入数据库的最后一行的rowid
-        return info
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`INSERT INTO ${this.tableName} (label,create_date,update_date) VALUES (?, ?, ?)`)
+                const data = stmt.run(label, datetime, datetime)
+                // changes 此操作插入、更新或删除的总行数
+                // lastInsertRowid 插入数据库的最后一行的rowid
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     get(id) {
-        const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date from ${this.tableName} WHERE cate_id=?`)
-        return stmt.get(id)
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date from ${this.tableName} WHERE cate_id=?`)
+                const  data =  stmt.get(id)
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     getByLabel(label) {
-        const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date from ${this.tableName} WHERE label=?`)
-        return stmt.get(label)
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`SELECT cate_id,label,create_date,update_date from ${this.tableName} WHERE label=?`)
+                const data = stmt.get(label)
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     getSameLabelCount(label) {
-        const stmt = this.db.prepare(`SELECT COUNT(*) as count from ${this.tableName} WHERE label=?`)
-        return stmt.get(label)
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`SELECT COUNT(*) as count from ${this.tableName} WHERE label=?`)
+                const data = stmt.get(label)
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     update(id, label) {
         const datetime = moment().format('YYYY-MM-DD hh:mm:ss')
-        const stmt = this.db.prepare(`UPDATE ${this.tableName} SET label=?,update_date=? WHERE cate_id=?`)
-        const info = stmt.run(label, datetime, id)
-        // changes 此操作插入、更新或删除的总行数
-        // lastInsertRowid 插入数据库的最后一行的rowid
-        return info
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`UPDATE ${this.tableName} SET label=?,update_date=? WHERE cate_id=?`)
+                const data = stmt.run(label, datetime, id)
+                // changes 此操作插入、更新或删除的总行数
+                // lastInsertRowid 插入数据库的最后一行的rowid
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 
     del(id) {
-        const stmt = this.db.prepare(`DELETE FROM ${this.tableName} WHERE cate_id=?`)
-        return stmt.run(id)
+        return new Promise((resolve, reject) => {
+            requestIdleCallback(() => {
+                const stmt = this.db.prepare(`DELETE FROM ${this.tableName} WHERE cate_id=?`)
+                const data = stmt.run(id)
+                resolve(data)              
+            }, {
+                timeout: 3000
+            })            
+        })
     }
 }

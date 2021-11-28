@@ -1,7 +1,8 @@
 const state = {
     currentCate: null,
     currentArticle: null,
-    articleList: []
+    articleList: [],
+    loading: false
 }
 
 const mutations = {
@@ -32,6 +33,9 @@ const mutations = {
         if(index !== -1) {
             state.articleList.splice(index, 1)
         }   
+    },
+    updateLoading(state, data) {
+        state.loading = data
     }
 }
 

@@ -81,17 +81,14 @@
 </template>
 
 <script>
-// const {createEditor} = require('@textbus/textbus')
 import {ipcRenderer} from 'electron'
 import RichEditor from "../components/RichEditor";
 import Categorys from "../components/Category";
 import Articles from "../components/Article";
-import { mapState, mapMutations } from "vuex";
+import { mapState } from "vuex";
 import {topBarKeys} from '../config/editor'
 import {
-  Editor,
-  Toolbar,
-  getEditor,
+  Toolbar
 } from "@wangeditor/editor-for-vue";
 export default {
   name: "Home",
@@ -106,7 +103,6 @@ export default {
   data() {
     return {
       defaultContent: [],
-      saveTimer: 0,
       cateIsOpen: true,
       articleIsOpen: true,
       searchContent: '',

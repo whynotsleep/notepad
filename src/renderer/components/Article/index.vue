@@ -18,7 +18,7 @@
         :title="item.label"
         :class="{active: activeId === item.article_id}"
         @contextmenu.stop
-        @click="selectItem(item, index)"    
+        @click="selectItem(item.article_id)"    
       >
         <div class="article-item-info">
           <div class="article-item-label">
@@ -27,18 +27,11 @@
         </div>
         <div class="article-item-bottom">
           {{ item.update_date }}
-          <i class="el-icon-close article-item-del" title="删除" @click.stop="del(item)"></i>
+          <!-- <i class="el-icon-close article-item-del" title="删除" @click.stop="del(item)"></i> -->
         </div>
         <!-- <div class="article-item-line" v-if="index < articleList.length - 1"></div> -->
       </li>
     </ul>
-    <!-- <v-contextmenu ref="listContextmenu">
-      <v-contextmenu-item @click="createNew">新建文章</v-contextmenu-item>
-    </v-contextmenu>
-    <v-contextmenu ref="itemContextmenu">
-      <v-contextmenu-item>重命名</v-contextmenu-item>
-      <v-contextmenu-item @click="delOld">删除</v-contextmenu-item>
-    </v-contextmenu> -->
   </div>
 </template>
 
@@ -48,8 +41,6 @@ export default {
   name: "Articles",
 
   components: {},
-
-  // props: ['searchContent'],
 
   data() {
     return {
@@ -85,40 +76,41 @@ export default {
   },
 
   methods: {
-    ...mapMutations(['updateCurrentArticle', 'updateArticleList', 'delAtIndexArticleList']),
+    ...mapMutations(['updateCurrentArticle', 'updateArticleList', 'delAtIndexArticleList', 'updateLoading']),
 
     async init() {
-      this.getList();
-      const first = this.articleList[0]
-      first && this.selectItem(first)
+      await this.getList();
+      const defaultArticle = localStorage.getItem('default-article')
+      const article_id = +defaultArticle
+
+      if(article_id && !isNaN(article_id)) {
+        this.selectItem(article_id, true)
+      }
     },
 
-    getList() {
+    async getList() {
       if ( !this.currentCate ) return
       try {
-        const list = this.$db.article.getSimpleList({
+        const list = await this.$db.article.getSimpleList({
           cateId: this.currentCate.cate_id,
           content: this.searchContent ||''
         });
         this.updateArticleList(list)
-        console.log("文章列表", list);
       } catch (err) {
         console.error(err);
       }
     },
 
     // 新建文章
-    createNew() {
+    async createNew() {
       if (!this.currentCate) return
       try {
-        const info = this.$db.article.add('新建文章', JSON.stringify([]), this.currentCate.cate_id)
-        console.log(info);
+        const info = await this.$db.article.add('新建文章', [], this.currentCate.cate_id)
         if (info.changes >= 1) {
-          const data = this.$db.article.get(info.lastInsertRowid);
+          const data = await this.$db.article.get(info.lastInsertRowid);
           if (data) {
             this.updateArticleList([...this.articleList, data])
           }
-          console.log(data);
         }
       } catch (err) {
         console.error(err);
@@ -128,13 +120,12 @@ export default {
     delOld() {},
 
     // 删除文章
-    del(item) {
+    async del(item) {
       try {
-        const info = this.$db.article.del(item.article_id);
-        console.log(info);
+        const info = await this.$db.article.del(item.article_id);
         if (info.changes > 0) {
           if(this.activeId === item.article_id) {
-            this.init()
+            this.init(this.articleList[0].article_id)
           } else {
             this.delAtIndexArticleList(item.article_id)
           }
@@ -152,14 +143,20 @@ export default {
       }
     },
 
-    selectItem(item) {
-      if(this.activeId === item.article_id) return
+    async selectItem(article_id, notUser) {
+      if(this.activeId === article_id) return
+      if(!notUser) {
+        localStorage.setItem('default-article', article_id)
+      }
       
-      this.activeId = item.article_id
-      const data = this.$db.article.get(item.article_id)
-      this.updateCurrentArticle(data)
-      console.log('切换文章', data)
-      this.$emit("select", data);
+      this.updateLoading(true)
+      const data = await this.$db.article.get(article_id)
+      if(data) {
+        this.activeId = article_id
+        this.updateCurrentArticle(data)
+        this.$emit("select", data)
+      }
+      this.updateLoading(false)
     },
   },
 };

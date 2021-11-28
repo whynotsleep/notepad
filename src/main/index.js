@@ -13,6 +13,7 @@ const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
 
+// 主窗口
 function createWindow () {
   /**
    * Initial window options
@@ -25,7 +26,8 @@ function createWindow () {
     frame: false, //隐藏标题栏
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      nodeIntegrationInWorker: true, //允许web worker
     }
   })
   Menu.setApplicationMenu(null)
@@ -35,10 +37,17 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-// render-event
-  // const ret = globalShortcut.register('F12', () => {
-  //   console.log('CommandOrControl+X is pressed')
-  // })
+  // mainWindow.webContents.send('distributeIds',{
+  //   mainWindow : mainWindow.id
+  // });
+  // 刷新页面
+  globalShortcut.register('F5', () => {
+    mainWindow.webContents.send('refresh')
+  })
+  // 打开开发者工具
+  globalShortcut.register('F12', () => {
+    mainWindow.openDevTools()
+  })
 }
 
 ipcMain.on('render-event',(event, arg) => {
@@ -48,15 +57,23 @@ ipcMain.on('render-event',(event, arg) => {
     } else {
       mainWindow.maximize()
     }
-    
   } else if (arg === 'min') {
     mainWindow.minimize()
   } else if (arg === 'close') {
-    mainWindow.close()
+    mainWindow.webContents.send('close')
   }
 })
 
-app.on('ready', createWindow)
+ipcMain.on('close',(event, arg) => {
+  mainWindow.close()
+})
+ipcMain.on('refresh',(event, arg) => {
+  mainWindow.reload()
+})
+
+app.on('ready', function() {
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

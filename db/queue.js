@@ -2,6 +2,93 @@
 // 
 // 设计原理
 // 
+export class Session {
+    constructor() {
+        
+    }
+
+    set(key, data) {
+        this[key] = data
+    }
+
+    get(key) {
+        return this[key]
+    }
+
+    remove(key) {
+        delete this[key]
+    }
+}
+
+export const session = new Session()
+
+class NoteSession {
+    constructor() {
+        session.set('cate', []) //结构 {cate_id: {cate_id: 1, label: '分类'}}
+        session.set('cateConcatArticleIds', {}) // 结构{cate_id: articleIds[1, 2]}
+        session.set('article', {}) // 结构{article_id: {article_id: 1, title: '文章标题'}}
+    }
+
+    // 保存分类列表
+    setCateList(data) {
+        session.set('cate', data)
+    }
+
+    // 获取分类列表
+    getCateList() {
+        session.get('cate')
+    }
+
+    // 保存分类信息
+    setCate(id, newValue) {
+        const data = session.get('cate')
+        const index = data.findIndex(item => item.cate_id === id)
+        if(index === -1) return false
+        data[index] = newValue
+        return true
+    }
+
+    // 获取分类信息
+    getCate(id) {
+        const data = session.get('cate') || []
+        return data.filter(e => e.cate_id === id)[0]
+    }
+
+    // 根据分类Id设置文章列表
+    setArticlesByCateIds(cateId, articles) {
+        const cateArticleIds = session.get('cateConcatArticleIds')
+        cateArticleIds[cateId] = Array.isArray(articles) ? articles : [articles]
+    }
+
+    // 根据分类Id获取文章列表
+    getArticlesByCateId(cateId) {
+        const cateArticleIds = session.get('cateConcatArticleIds')
+        const articleIds = cateArticleIds[cateId]
+        if(!articleIds) return false
+        const article = session.get('article') || {}
+        return articleIds.map(artcleId => {
+            return article[artcleId]
+        })
+    }
+
+    // 保存文章
+    setArticle(id, newValue) {
+        const article = session.get('article')
+        article[id] = {...newValue}
+    }
+
+    // 获取文章
+    getArticle(id) {
+        return session.get('article')[id]
+    }
+
+    delArticle(id) {
+        delete session.get('article')[id]
+    }
+}
+
+export const nSession = new NoteSession()
+
 export default class Queue {
     memory = {}
     queue = []
@@ -10,11 +97,10 @@ export default class Queue {
 
     }
 
-    async push(id, data, callback) {
+    async push(id, callback) {
         // 缓存
         this.memory[id] = {
             timestamp: Date.now(),
-            data,
             callback
         }
         // 需要操作的数组
@@ -37,7 +123,6 @@ export default class Queue {
             while(queue.length > 0) {
                 const id = queue[0]
                 const {data, callback} = this.memory[id]
-                console.log('更新了ID：', id)
                 callback(data)
                 queue.splice(0, 1)
             }
