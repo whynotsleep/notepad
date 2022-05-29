@@ -1,208 +1,209 @@
 <template>
   <div class="categorys">
-    <!-- <div class="cate-add">
-      <el-button type="primary" icon="el-icon-plus" circle size="mini" @click="createNew"></el-button>
-      <span class="cate-add-label">新建分类</span>
-    </div> -->
-    <ul class="cate-list">
-      <li
-        class="cate-item"
-        :class="{ active: activeId === item.cate_id }"
-        v-for="item in list"
-        :key="item.cate_id"
-        :title="item.label"
-        :item="item"
-        @contextmenu.stop
-        @click="selectCate(item)"
-        @dblclick="openEdit(item)"
-      >
-        <div class="cate-item-info" v-if="!updateItem || updateItem.cate_id !== item.cate_id">
-          <span class="cate-item-label">{{ item.label }}</span>
-          <!-- <i
-            class="el-icon-close cate-item-del"
-            title="删除"
-            @click="del(item)"
-          ></i> -->
-        </div>
-        <div v-else>
-          <el-input
-            placeholder="请输入名称"
-            size="mini"
-            :ref="'input_' + item.cate_id"
-            v-model="item.label"
-            @click.stop
-            @click.native.stop
-            @change="saveUpdate(item)"
-            @keyup.native.enter="saveUpdate(item)"
-            @keyup.native.esc="exitUpdate(item)"
-          ></el-input>
-        </div>
-      </li>
-    </ul>
+    <ContextMenu
+      :menus="contextmenuList"
+      @newCate="newCate"
+      @updateCateOperate="updateCateOperate"
+      @delCateOperate="delCateOperate"
+    >
+      <ul class="cate-list">
+        <li
+          class="cate-item"
+          :class="{ active: activeId === item.cate_id }"
+          v-for="item in cateList"
+          :key="item.cate_id"
+          :data-id="item.cate_id"
+          :title="item.label"
+          :item="item"
+          @click="selectCate(item)"
+          @dblclick="openEdit(item)"
+        >
+          <div
+            class="cate-item-info"
+            v-if="!updateItem || updateItem.cate_id !== item.cate_id"
+          >
+            <span class="cate-item-label cate-test">{{ item.label }}</span>
+          </div>
+          <div v-else>
+            <el-input
+              placeholder="请输入名称"
+              size="mini"
+              :ref="'input_' + item.cate_id"
+              v-model="editLabel"
+              @click.stop
+              @click.native.stop
+              @change="saveUpdate(item)"
+              @keyup.native.enter="saveUpdate(item)"
+              @keyup.native.esc="exitUpdate(item)"
+            ></el-input>
+          </div>
+        </li>
+      </ul>
+    </ContextMenu>
   </div>
 </template>
 
 <script>
-import {mapState, mapMutations} from 'vuex'
+import ContextMenu from "../ContextMenu/index"
+import { mapState, mapMutations, mapActions } from "vuex"
 export default {
   name: "Categorys",
 
-  components: {},
+  components: {
+    ContextMenu,
+  },
 
   data() {
     return {
-      list: [],
       updateItem: null,
       activeId: -1,
-      oldUpdateLabel: "",
+      editLabel: "",
+      contextmenuList: [
+        {
+          label: "新建分类",
+          eventName: "newCate",
+          classname: "categorys",
+        },
+        {
+          label: "新建分类",
+          eventName: "newCate",
+          classname: "cate-item",
+        },
+        {
+          label: "重命名",
+          eventName: "updateCateOperate",
+          classname: "cate-item",
+        },
+        {
+          label: "删除",
+          eventName: "delCateOperate",
+          classname: "cate-item",
+        },
+      ],
     };
   },
 
   computed: {
-    ...mapState([])
+    ...mapState({
+      currentCate: state => state.Main.currentCate,
+      cateList: state => state.Main.cateList
+    }),
   },
 
   created() {
-    // this.$db.category.add('测试1')
-
     this.init();
   },
 
   mounted() {
-    document.body.addEventListener('click', this.bodyClick)
+    document.body.addEventListener("contextmenu", this.bodyClick)
   },
 
   beforeDestroy() {
-    document.body.removeEventListener('click', this.bodyClick)
+    document.body.removeEventListener("contextmenu", this.bodyClick)
   },
 
   methods: {
-    ...mapMutations(['updateCurrentCate']),
+    ...mapMutations(['SET']),
+    ...mapActions(["getCateList", 'addCate', 'delCate', 'updateCate']),
 
     async init() {
-      await this.getList();
-        // 默认选择项
-      const defaultCate = localStorage.getItem('default-cate')
-      if(!defaultCate)return
-      const selected = this.list.filter(cate => String(cate.cate_id) == String(defaultCate))
-      selected && selected[0] && this.selectCate(selected[0], true)
+      await this.getCateList()
+      // 默认选择项
+      const defaultCate = localStorage.getItem("default-cate")
+      if (!defaultCate) return
+      const selected = this.cateList.find( cate => String(cate.cate_id) === String(defaultCate))
+      selected && this.selectCate(selected, true)
     },
 
+    // 选中分类
     selectCate(item, notUser) {
-      if( this.activeId === item.cate_id ) return
-
-      this.activeId = item.cate_id;
-      this.updateCurrentCate(item)
-      if(!notUser) {
-        localStorage.setItem('default-cate', item.cate_id)
+      if (this.activeId === item.cate_id) return
+      this.activeId = item.cate_id
+      this.SET({
+        currentCate: item
+      })
+      if (!notUser) {
+        localStorage.setItem("default-cate", item.cate_id)
       }
     },
 
-    bodyClick(){
-      if( this.updateItem ) {
-        this.saveUpdate(this.updateItem)
-      }
-    },
-
-    async getList() {
-      try {
-        this.list = await this.$db.category.getList()
-      } catch (err) {
-        console.err(err)
+    bodyClick() {
+      if (this.updateItem) {
+        this.saveUpdate(this.updateItem);
       }
     },
 
     // 获取相同的名称数量
-    getSameLabelCount(label) {
+    async getSameLabelCount(label) {
       if (!label) return;
       try {
-        return this.$db.category.getSameLabelCount(label);
-      } catch (err) {
-        console.error(err);
-      }
-    },
-
-    async createNew() {
-      // const id = this.getSameLabelCount('新建分类')
-      const item = await this.add("新建分类");
-      this.list.unshift(item);
-      this.openEdit(item);
-    },
-
-    async add(label) {
-      if (!label) return null;
-      try {
-        const info = await this.$db.category.add(label);
-        if (info.changes >= 1) {
-          const data = await this.$db.category.get(info.lastInsertRowid);
+        const { code, data, msg } = await this.$fetch(
+          "/category/getSameLabelCount",
+          { label }
+        );
+        if (code === 0) {
           return data;
+        } else {
+          return;
         }
       } catch (err) {
         console.error(err);
       }
-      return null;
     },
 
-    // 删除分类
-    delCate() {
-      this.del({
-        cate_id: this.activeId
-      })
+    // 新增
+    async newCate(e) {
+      const item = await this.addCate({ label: '新建分类' })
+      this.openEdit(item)
     },
 
-    async del(item) {
-      try {
-        const info = await this.$db.category.del(item.cate_id);
-        if (info.changes > 0) {
-          this.getList();
-        }
-      } catch (err) {
-        console.error(err);
+    // 修改
+    updateCateOperate(e) {
+      const cate = this.cateList.find( (item) => item.cate_id.toString() === e.dataset.id )
+      if (cate) {
+        this.openEdit(cate)
+      }
+    },
+
+    // 删除
+    async delCateOperate(e) {
+      const cate = this.cateList.find(
+        (item) => item.cate_id.toString() === e.dataset.id
+      )
+      if (cate) {
+        this.delCate({
+          cate_id: cate.cate_id
+        })
       }
     },
 
     // 打开编辑输入框
     openEdit(item) {
-      this.updateItem =  item
-      this.oldUpdateLabel = item.label;
-      const refKey = "input_" + item.cate_id;
+      this.updateItem = item
+      this.editLabel = item.label
+      const refKey = "input_" + item.cate_id
       this.$nextTick(() => {
         this.$refs[refKey] &&
           this.$refs[refKey][0] &&
-          this.$refs[refKey][0].focus();
+          this.$refs[refKey][0].focus()
       });
     },
 
     // 保存修改操作
     saveUpdate(item) {
-      if( !item.label ) return
-      this.update(item.cate_id, item.label)
-      this.oldUpdateLabel = ''
+      this.updateCate({
+        cate_id: item.cate_id,
+        label: this.editLabel || ''
+      })
+      this.editLabel = ""
       this.updateItem = null
     },
 
     // 退出修改
-    exitUpdate(item) {
-      item.label = this.oldUpdateLabel
-      this.oldUpdateLabel = ''
+    exitUpdate() {
+      this.editLabel = ""
       this.updateItem = null
-    },
-
-    // 修改
-    async update(cate_id, label) {
-      try {
-        const info = await this.$db.category.update(
-          cate_id,
-          label
-        );
-        if (info.changes >= 1) {
-          return true
-        }
-      } catch (err) {
-        console.error(err)
-      }
-      return false
-    },
+    }
   },
 };
 </script>
@@ -216,9 +217,44 @@ export default {
   flex-direction: column;
   transition: width 0.15s;
   // background-color: #3c3940;
-  background: #e3e3e3;
+  // background: #e3e3e3;
   // background: linear-gradient(to bottom, #5b5b5b, #2c2e32);
-    // background: linear-gradient(to bottom, #e4e4e4, #b9b9b9);
+  // background: linear-gradient(to bottom, #e4e4e4, #b9b9b9);
+  .top-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 7px;
+    border-bottom: 1px solid #eee;
+    .top-btns {
+      width: 100px;
+      height: 28px;
+      background-color: #fff;
+      position: relative;
+      border-radius: 14px;
+      padding: 0 10px;
+      border-radius: 14px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .btn-label {
+        padding: 0 10px;
+      }
+      .add-btn,
+      .remove-btn {
+        display: block;
+        width: 28px;
+        height: 28px;
+        box-sizing: border-box;
+        border-radius: 14px;
+        line-height: 28px;
+        cursor: pointer;
+        transition: all 0.2;
+        color: #6c6c6c;
+        text-align: center;
+      }
+    }
+  }
   .cate-add {
     display: flex;
     justify-content: flex-start;
@@ -231,24 +267,23 @@ export default {
     }
   }
   .cate-list {
-    flex: 1;
     width: 100%;
-    padding: 10px 0;
+    height: 100%;
+    padding: 0 0 10px 0;
     box-sizing: border-box;
     overflow-y: auto;
     .cate-item {
       padding: 6px 10px;
       box-sizing: border-box;
       cursor: pointer;
-      // border-bottom: 1px solid #f1f1f1;
 
       &:hover {
-        // background: rgba(0, 0, 0, 0.2);
-        background-color: #d4d4d4;
+        background-color: var(--active-color);
+        background-color: rgba(255, 255, 255, 0.3);
         .cate-item-info {
           .cate-item-label {
-            color: #454545;
-            // transform: scale(1.1);
+            // color: #454545;
+            // color:  var(--theme-color);
           }
           .cate-item-del {
             width: auto;
@@ -260,12 +295,11 @@ export default {
       }
 
       &.active {
-        background-color: #c3c3c3;
-        // background: rgba(0, 0, 0, 0.45);
+        background-color: rgba(255, 255, 255, 1);
         .cate-item-info {
           .cate-item-label {
-            color: #333;
-            transform: scale(1.1);
+            // color: #303133;
+            color: var(--theme-color);
           }
         }
       }
@@ -275,12 +309,13 @@ export default {
         justify-content: space-between;
         align-items: center;
         .cate-item-label {
+          height: 24px;
           transform-origin: left;
           flex: 1;
           line-height: 24px;
           // color: #efefef;
-          color: #656565;
-          font-size: 14px;
+          color: #fff;
+          font-size: 12px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -294,7 +329,7 @@ export default {
           color: #333;
           opacity: 0;
           &:hover {
-            transform: scale(1.2);
+            transform: scale(1.1);
           }
         }
       }

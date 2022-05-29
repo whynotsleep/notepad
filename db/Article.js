@@ -7,7 +7,7 @@ export default class Article {
     mapQueue = {}
     timer = 0
     oldRequestId = 0
-    constructor(db) {
+    constructor(db,) {
         if(!db) {
             throw new Error('缺少better-sqlite3 db对象！')
         }

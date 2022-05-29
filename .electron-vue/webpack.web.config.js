@@ -14,7 +14,8 @@ const { VueLoaderPlugin } = require('vue-loader')
 let webConfig = {
   devtool: '#cheap-module-eval-source-map',
   entry: {
-    web: path.join(__dirname, '../src/renderer/main.js')
+    web: path.join(__dirname, '../src/renderer/main.js'),
+    db: path.join(__dirname, '../src/db/main.js')
   },
   module: {
     rules: [
@@ -103,7 +104,31 @@ let webConfig = {
         removeAttributeQuotes: true,
         removeComments: true
       },
-      nodeModules: false
+      nodeModules: false,
+      chunks: ['web']
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'db.html',
+      template: path.resolve(__dirname, '../src/index.ejs'),
+      templateParameters(compilation, assets, options) {
+        return {
+          compilation: compilation,
+          webpack: compilation.getStats().toJson(),
+          webpackConfig: compilation.options,
+          htmlWebpackPlugin: {
+            files: assets,
+            options: options,
+          },
+          process,
+        };
+      },
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true
+      },
+      nodeModules: false,
+      chunks: ['db']
     }),
     new webpack.DefinePlugin({
       'process.env.IS_WEB': 'true'

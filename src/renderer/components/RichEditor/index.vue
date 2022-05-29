@@ -127,7 +127,7 @@ export default {
 
     // 手动重置
     reset(content) {
-      const editor = getEditor(this.editorId)
+      const editor =  (this.editorId)
       if (editor == null) return
       editor.clear()
       // 不能直接赋值为空
@@ -155,6 +155,7 @@ export default {
     },
 
     onCreated(editor) {
+      this.editor = Object.seal(editor)
       this.reset(this.article.content || [])
     },
 

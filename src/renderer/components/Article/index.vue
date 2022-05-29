@@ -1,59 +1,71 @@
 <template>
   <div class="articles">
-    <div class="search">
-      <el-input
-        placeholder="请输入搜索内容"
-        suffix-icon="el-icon-search"
-        size="small"
-        v-model="searchContent"
-        @input="getList"
-      >
-      </el-input>
-    </div>
-    <ul class="article-list">
-      <li
-        class="article-item"
-        v-for="(item, index) in articleList"
-        :key="item.article_id"
-        :title="item.label"
-        :class="{active: activeId === item.article_id}"
-        @contextmenu.stop
-        @click="selectItem(item.article_id)"    
-      >
-        <div class="article-item-info">
-          <div class="article-item-label">
-            <span>{{index+1}}&nbsp;-&nbsp;{{ item.title }}</span>
+    <ContextMenu :menus="contextmenuList" @newArticle="newArticle" @delArticleOperate="delArticleOperate">
+      <ul class="article-list">
+        <li
+          class="article-item"
+          v-for="(item, index) in articleList"
+          :key="item.article_id"
+          :data-id="item.article_id"
+          :title="item.label"
+          :class="{active: activeId === item.article_id}"
+          @click="selectItem(item.article_id)"    
+        >
+          <div class="article-item-info" :title="item.title">
+            <div class="article-item-label">
+              <span>{{index+1}}&nbsp;-&nbsp;{{ item.title }}</span>
+            </div>
           </div>
-        </div>
-        <div class="article-item-bottom">
-          {{ item.update_date }}
-          <!-- <i class="el-icon-close article-item-del" title="删除" @click.stop="del(item)"></i> -->
-        </div>
-        <!-- <div class="article-item-line" v-if="index < articleList.length - 1"></div> -->
-      </li>
-    </ul>
+          <div class="article-item-bottom">
+            {{ item.update_date }}
+          </div>
+        </li>
+      </ul>      
+    </ContextMenu>
   </div>
 </template>
 
 <script>
-import {mapState, mapMutations} from 'vuex'
+import ContextMenu from '../ContextMenu/index'
+import {mapState, mapGetters, mapMutations, mapActions} from 'vuex'
 export default {
   name: "Articles",
 
-  components: {},
+  components: {
+    ContextMenu
+  },
 
   data() {
     return {
       activeId: -1,
-      searchContent: ''
+      searchContent: '',
+      contextmenuList: [
+        {
+          label: '新建文章',
+          eventName: 'newArticle',
+          classname: 'articles'
+        },
+        {
+          label: '新建文章',
+          eventName: 'newArticle',
+          classname: 'article-item'
+        },
+        {
+          label: '删除',
+          eventName: 'delArticleOperate',
+          classname: 'article-item'
+        }
+      ]
     };
   },
 
   computed: {
     ...mapState({
-      currentCate: state => state.Home.currentCate,
-      articleList: state => state.Home.articleList,
-    })
+      currentCate: state => state.Main.currentCate,
+      articleList: state => state.Main.articleList,
+      currentArticle: (state) => state.Main.currentArticle,
+    }),
+    ...mapGetters([])
   },
 
   watch: {
@@ -62,6 +74,14 @@ export default {
       handler() {
         this.init()
       }
+    },
+    currentArticle: {
+      immediate: true,
+      handler(val) {
+        if(val && val.article_id !== this.activeId) {
+          this.selectItem(val.article_id, true)
+        }
+      }   
     }
   },
 
@@ -76,10 +96,13 @@ export default {
   },
 
   methods: {
-    ...mapMutations(['updateCurrentArticle', 'updateArticleList', 'delAtIndexArticleList', 'updateLoading']),
+    ...mapMutations(['SET']),
+    ...mapActions(['getArticleList', 'getArticleDetail', 'addArticle', 'updateArticle', 'delArticle']),
 
     async init() {
-      await this.getList();
+      if ( !this.currentCate ) return
+      const cateId = this.currentCate.cate_id
+      await this.getArticleList({cate_id: cateId})
       const defaultArticle = localStorage.getItem('default-article')
       const article_id = +defaultArticle
 
@@ -88,81 +111,81 @@ export default {
       }
     },
 
-    async getList() {
-      if ( !this.currentCate ) return
-      try {
-        const list = await this.$db.article.getSimpleList({
-          cateId: this.currentCate.cate_id,
-          content: this.searchContent ||''
-        });
-        this.updateArticleList(list)
-      } catch (err) {
-        console.error(err);
-      }
+    bodyClick() {
+
     },
 
-    // 新建文章
-    async createNew() {
+    async newArticle() {
       if (!this.currentCate) return
-      try {
-        const info = await this.$db.article.add('新建文章', [], this.currentCate.cate_id)
-        if (info.changes >= 1) {
-          const data = await this.$db.article.get(info.lastInsertRowid);
-          if (data) {
-            this.updateArticleList([...this.articleList, data])
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
+      const cateId = this.currentCate.cate_id
+      await this.addArticle({
+        cate_id: cateId, title: '', content: ''
+      })
     },
 
-    delOld() {},
-
-    // 删除文章
-    async del(item) {
-      try {
-        const info = await this.$db.article.del(item.article_id);
-        if (info.changes > 0) {
-          if(this.activeId === item.article_id) {
-            this.init(this.articleList[0].article_id)
-          } else {
-            this.delAtIndexArticleList(item.article_id)
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    },
-
-    delActivity() {
-      if(this.activeId) {
-        this.del({
-          article_id: this.activeId
+    async delArticleOperate(e) {
+      const selected = this.articleList.find(item => item.article_id.toString() === e.dataset.id)
+      if(selected) {
+        this.delArticle({
+          article_id: selected.article_id
         })
       }
     },
 
     async selectItem(article_id, notUser) {
       if(this.activeId === article_id) return
+
       if(!notUser) {
         localStorage.setItem('default-article', article_id)
       }
       
-      this.updateLoading(true)
-      const data = await this.$db.article.get(article_id)
+      const data = await this.getArticleDetail({article_id})
       if(data) {
         this.activeId = article_id
-        this.updateCurrentArticle(data)
+        this.SET({
+          currentArticle: data
+        })
         this.$emit("select", data)
       }
-      this.updateLoading(false)
     },
   },
 };
 </script>
 
 <style scoped lang="scss">
+  .top-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 7px;
+    border-bottom: 1px solid #eee;
+    .top-btns {
+      height: 28px;
+      background-color: #fff;
+      position: relative;
+      border-radius: 14px;
+      padding: 0 10px;
+      border-radius: 14px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .btn-label {
+        padding: 0 10px;
+      }
+      .add-btn,.remove-btn {
+        display: block;
+        width: 28px;
+        height: 28px;
+        box-sizing: border-box;
+        border-radius: 14px;
+        line-height: 28px;
+        cursor: pointer;
+        transition: all 0.2;
+        color: #6c6c6c;
+        text-align: center;
+      }
+    }
+  }
 .articles {
   display: flex;
   flex-direction: column;
@@ -193,6 +216,8 @@ export default {
   }
 }
 .article-list {
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   .article-item {
     width: 100%;
@@ -201,7 +226,7 @@ export default {
     position: relative;
     cursor: pointer;
     transition: all 0.2s;
-
+    border-bottom: 1px solid #ececec;
     .article-item-del {
       display: none;
       &:hover {
@@ -210,8 +235,8 @@ export default {
       }
     }
 
-    &+.article-item {
-      border-top: 1px solid #ececec;
+    &:last-of-type {
+      border-bottom: none;
     }
 
     &:hover {
@@ -227,22 +252,17 @@ export default {
 
     .article-item-info {
       width: 100%;
-      // padding: 10px;
       box-sizing: border-box;
-      // background-color: #fff;
-      // border: 1px solid #1777fe;
     }
 
     .article-item-label {
-      max-height: 36px;
+      width: 100%;
+      height: 18px;
       line-height: 18px;
       font-size: 12px;
       overflow: hidden;
-      word-break: break-all;
-      display: -webkit-box;
       text-overflow: ellipsis;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      white-space: nowrap;
     }
     .article-item-bottom {
       display: flex;

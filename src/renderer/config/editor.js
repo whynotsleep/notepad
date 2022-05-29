@@ -9,7 +9,7 @@ export const toolbarKeys = ['bold', 'underline', 'italic', 'through', 'code', 's
  'numberedList', 'insertTable', 'deleteTable', 'insertTableRow', 'deleteTableRow', 'insertTableCol', 
  'deleteTableCol', 'tableHeader', 'tableFullWidth', 'insertVideo', 'deleteVideo', 'uploadImage', 'codeSelectLang']
 
-export const topBarKeys = [
+export const topBarKeys2 = [
     'headerSelect',
     'fontSize', 'fontFamily','lineHeight',
     {
@@ -19,11 +19,29 @@ export const topBarKeys = [
         menuKeys: ['bold', 'italic', 'underline', 'through', 'justifyLeft', 'justifyRight', 'justifyCenter', 'justifyJustify', "clearStyle"] // 下级菜单 key ，必填
     },
     'color', 'bgColor',
-    'insertLink', 'bulletedList', 'numberedList','insertTable', 'codeBlock',
+    'insertLink', 'bulletedList', 'numberedList','insertTable', 'codeBlock', 'emotion',
     {
         key: 'group-more-other',
         title: '其它',
         iconSvg: arrowIcon,
-        menuKeys: ['divider', 'blockquote', 'code', 'emotion',  'sub', 'sup']
+        menuKeys: ['divider', 'blockquote', 'code',   'sub', 'sup']
     }
+]
+export const topBarKeys = [
+    'header1','header2','header3','bold', 'italic', 'underline', 'through', 'justifyLeft', 'justifyRight', 'justifyCenter', 'justifyJustify',
+    'color', 'bgColor', "clearStyle", "codeBlock","bulletedList","numberedList","todo","insertTable",'emotion','insertLink','divider', 'redo', 'undo',
+    // {
+    //     key: 'group-more-style', // 必填，要以 group 开头
+    //     title: '样式', // 必填
+    //     // iconSvg: '<svg>....</svg>', // 可选
+    //     menuKeys: ['bold', 'italic', 'underline', 'through', 'justifyLeft', 'justifyRight', 'justifyCenter', 'justifyJustify', "clearStyle"] // 下级菜单 key ，必填
+    // },
+    // 'color', 'bgColor',
+    // 'insertLink', 'bulletedList', 'numberedList','insertTable', 'codeBlock', 'emotion',
+    // {
+    //     key: 'group-more-other',
+    //     title: '其它',
+    //     iconSvg: arrowIcon,
+    //     menuKeys: ['divider', 'blockquote', 'code',   'sub', 'sup']
+    // }
 ]

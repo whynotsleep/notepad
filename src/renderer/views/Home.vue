@@ -3,192 +3,291 @@
     <div class="home-btns">
       <div class="home-btns-wrap">
         <div class="browser">
-          <span class="browser-btn browser-red" title="关闭" @click="windowEvent('close')"></span>
-          <span class="browser-btn browser-yellow" title="最大化" @click="windowEvent('max')"></span>
-          <span class="browser-btn browser-blue" title="最小化" @click="windowEvent('min')"></span>
+          <span
+            class="browser-btn browser-red"
+            title="关闭"
+            @click="windowEvent('close')"
+          ></span>
+          <span
+            class="browser-btn browser-yellow"
+            title="最小化"
+            @click="windowEvent('min')"
+          ></span>
+          <span
+            class="browser-btn browser-green"
+            title="最大化"
+            @click="windowEvent('max')"
+          ></span>
         </div>
         <div class="module-btns home-btns-left">
           <span
             class="home-top-btn"
             :class="{ active: cateIsOpen }"
             :title="articleIsOpen ? '打开分类列表' : '关闭分类列表'"
-            @click="toggleCateOpen"
+            @click="toggleViewOpen('cateIsOpen')"
           >
             <i v-if="cateIsOpen" class="el-icon-folder-opened"></i>
             <i v-else class="el-icon-folder"></i>
           </span>
-          <span class="home-top-btn" title="新建分类" @click="addNewCate">
-            <i class="el-icon-folder-add"></i>
-          </span>
-          <span class="home-top-btn" title="删除分类" @click="removeCate">
-            <i class="el-icon-folder-remove"></i>
-          </span>
-        </div>
-        <div class="module-btns home-btns-middle">
           <span
             class="home-top-btn"
             :class="{ active: articleIsOpen }"
             :title="articleIsOpen ? '打开文章列表' : '关闭文章列表'"
-            @click="toggleArticleOpen"
+            @click="toggleViewOpen('articleIsOpen')"
           >
             <i v-if="articleIsOpen" class="el-icon-document-copy"></i>
             <i v-else class="el-icon-tickets"></i>
           </span>
-          <span class="home-top-btn" title="新建文章" @click="addNewArticle">
-            <i class="el-icon-document-add"></i>
-          </span>
-          <span class="home-top-btn" title="删除文章" @click="removeArticle">
-            <i class="el-icon-document-remove"></i>
-          </span>
-          <!-- <el-input
-            placeholder="请输入搜索内容"
-            suffix-icon="el-icon-search"
-            size="mini"
-            v-model="searchContent"
-            @change="searchChange"
-          >
-          </el-input> -->
         </div>
+        <!-- <div class="module-btns home-btns-left">
+          <span
+            class="home-top-btn"
+            :class="{ active: searchIsOpen }"
+            title="搜索"
+            @click="toggleViewOpen('searchIsOpen')"
+          >
+            <i class="el-icon-search"></i>
+          </span>
+          <transition
+            enter-active-class="search-enter-active"
+            leave-active-class="search-leave-active"
+          >
+            <span v-if="searchIsOpen" class="home-top-btn search-top-btn">
+              <el-input
+                class="search-input"
+                placeholder="搜索"
+                size="mini"
+                v-model="searchLabel"
+                @click.stop
+                @click.native.stop
+                @keyup.native.enter="search"
+              ></el-input>
+            </span>
+          </transition>
+        </div> -->
         <div class="home-btns-right">
-          <Toolbar
-            class="toolbar"
-            :editorId="editorId"
-            :defaultConfig="toolbarConfig"
-          />
+          <Toolbar></Toolbar>
         </div>
       </div>
     </div>
     <div class="home-content">
-      <Categorys
-        ref="category"
-        :style="cateStyle"
-      ></Categorys>
+      <Categorys ref="category" :style="cateStyle"></Categorys>
       <Articles
         ref="article"
         :style="articleStyle"
         :searchContent="searchContent"
-        @select="selectArticle"
       ></Articles>
-      <!-- contenteditable="true" -->
-      <div id="editor" class="editor">
-        <RichEditor
-          ref="richEditor"
-          :default-content="defaultContent"
-        ></RichEditor>
+      <div id="editor" class="editor-wrap">
+        <div class="title">
+          <input
+            v-if="currentArticle"
+            type="text"
+            class="title-input"
+            placeholder="请输入标题"
+            v-model="title"
+            @input="titleInput"
+          />
+        </div>
+
+        <quill-editor
+          v-show="currentArticle"
+          ref="myQuillEditor"
+          class="editor-container"
+          :content="html"
+          :options="editorOption"
+          @change="onChange($event)"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import {ipcRenderer} from 'electron'
-import RichEditor from "../components/RichEditor";
+import { ipcRenderer } from "electron";
 import Categorys from "../components/Category";
 import Articles from "../components/Article";
-import { mapState } from "vuex";
-import {topBarKeys} from '../config/editor'
-import {
-  Toolbar
-} from "@wangeditor/editor-for-vue";
+import { mapState, mapMutations, mapActions } from "vuex";
+import { quillEditor, Quill } from "vue-quill-editor";
+import hljs from "highlight.js";
+import Toolbar from "../components/Quill/Toolbar.vue";
 export default {
-  name: "Home",
+  name: "Home3",
 
   components: {
-    RichEditor,
     Categorys,
     Articles,
-    Toolbar
+    quillEditor,
+    Toolbar,
   },
 
   data() {
     return {
-      defaultContent: [],
+      searchLabel: "",
+      title: "",
+      html: "",
       cateIsOpen: true,
       articleIsOpen: true,
-      searchContent: '',
-      editorId: "w-e-1",
-      toolbarConfig: {
-        toolbarKeys: topBarKeys
-      }
+      searchIsOpen: true,
+      searchContent: "",
+      editorOption: {
+        boundary: document.body,
+        modules: {
+          formula: false,
+          syntax: {
+            highlight: (text) => hljs.highlightAuto(text).value,
+          },
+          toolbar: "#toolbar",
+          history: {
+            delay: 2000,
+            maxStack: 100,
+            userOnly: true
+          },
+          keyboard: {
+            bindings: {
+              custom: {
+                key: 'Z',
+                shortKey: true,
+                handler: function(range, context) {
+                  if(this.quill.history.stack.undo.length > 0) {
+                    return true
+                  } else {
+                    return false
+                  }
+                }
+              },
+            }
+          }
+        },
+        placeholder: "",
+        theme: "snow",
+      },
+      beforeTime: 0,
+      timer: 0,
     };
   },
 
   computed: {
     ...mapState({
-      currentArticle: (state) => state.Home.currentArticle,
+      currentArticle: (state) => state.Main.currentArticle,
     }),
     cateStyle() {
       return {
-        width: this.cateIsOpen ? '160px' : 0,
-        overflow: this.cateIsOpen ? 'hidden' : 'auto'
-      }
+        width: this.cateIsOpen ? "160px" : 0,
+        overflow: this.cateIsOpen ? "hidden" : "auto",
+      };
     },
     articleStyle() {
       return {
-        width: this.articleIsOpen ? '200px' : 0,
-        overflow: this.articleIsOpen ? 'hidden' : 'auto'
-      }
-    }
+        width: this.articleIsOpen ? "200px" : 0,
+        overflow: this.articleIsOpen ? "hidden" : "auto",
+      };
+    },
   },
 
   watch: {
     currentArticle: {
       immediate: true,
       handler(article) {
+        if(this.$refs.myQuillEditor && this.$refs.myQuillEditor.quill) {
+          this.$refs.myQuillEditor.quill.history.clear()
+        } 
         if (article) {
           this.selectArticle(article);
+        } else {
+          this.html = ''
+          this.title = ''
         }
       },
     },
   },
 
-  created() {
-    // this.$db.category.add('测试1')
+  created() {},
+
+  mounted() {
+    document.body.addEventListener("click", this.bodyClick)
   },
 
-  mounted() {},
+  destroyed() {
+    document.body.removeEventListener("click", this.bodyClick)
+  },
 
   methods: {
-    selectArticle(article) {
-      // const data = this.$db.article.get(article.article_id);
-      // const content = JSON.parse(article.content)
-      // if (Array.isArray(content)) {
-      //   this.defaultContent = content
-      // } else {
-      //   this.defaultContent = []
-      // }
+    ...mapMutations(['SET']),
+    ...mapActions(['updateArticle', 'getArticleDetail']),
+
+    bodyClick() {
+      this.$refs.category && this.$refs.category.bodyClick()
+      this.$refs.article && this.$refs.article.bodyClick()
     },
 
-    toggleCateOpen() {
-      this.cateIsOpen = !this.cateIsOpen;
+    onChange({ quill, html, text }) {
+      this.html = html
+      if(html === this.currentArticle.content) {
+        return
+      }
+      this.timeUpdateArticle()
     },
-    toggleArticleOpen() {
-      this.articleIsOpen = !this.articleIsOpen;
+
+    titleInput() {
+      if (!this.currentArticle) return
+      this.updateArticle({
+        article_id: this.currentArticle.article_id,
+        title: this.title
+      })
     },
-    // 新增分类
-    addNewCate() {
-      this.$refs.category && this.$refs.category.createNew();
+
+    // 搜索
+    search() {},
+
+    async selectArticle(article) {
+      const data = await this.getArticleDetail({
+        article_id: article.article_id
+      })
+      setTimeout(() => {
+        this.html = data.content
+        this.title = data.title
+      })
     },
-    // 移除分类
-    removeCate() {
-      this.$refs.category && this.$refs.category.delCate();
-    },
-    // 新增文章
-    addNewArticle() {
-      this.$refs.article && this.$refs.article.createNew();
-    },
-    // 移除文章
-    removeArticle() {
-      this.$refs.article && this.$refs.article.delActivity();
-    },
-    searchChange() {
-      // this.$refs.article && this.$refs.article.getList();
+
+    // 切换视图显示/隐藏
+    toggleViewOpen(name) {
+      if (name) {
+        this[name] = !this[name]
+      }
     },
 
     windowEvent(type) {
-      ipcRenderer.send('render-event', type)
-    }
+      ipcRenderer.send("render-event", type)
+    },
 
+    // 定时保存
+    timeUpdateArticle() {
+      const now = Date.now()
+      clearTimeout(this.timer)
+      if (now - this.beforeTime > 5000) {
+        this.beforeTime = now
+        this.updateArticleOperate()
+      } else {
+        this.timer = setTimeout(() => {
+          this.updateArticleOperate();
+        }, 100);
+      }
+    },
+
+    // 立即保存
+    immediateSave() {
+      clearTimeout(this.timer)
+      this.updateArticleOperate()
+    },
+
+    async updateArticleOperate() {
+      if (!this.currentArticle) return
+      this.updateArticle({
+        article_id: this.currentArticle.article_id,
+        title: this.title,
+        content: this.html
+      })
+    },
     // 定时保存
   },
 };
@@ -201,6 +300,12 @@ export default {
   height: 100%;
   padding-top: 48px;
   box-sizing: border-box;
+  background: var(--theme-color);
+  background: linear-gradient(
+    to bottom,
+    var(--linear-start-color),
+    var(--linear-end-color)
+  );
   .home-btns {
     width: 100%;
     padding: 10px 0;
@@ -209,101 +314,147 @@ export default {
     left: 0;
     z-index: 1;
     flex-shrink: 0;
-    background-color: #d6d6d6;
     -webkit-app-region: drag;
-      // display: flex;
-      // flex-wrap: nowrap;
-      // justify-content: space-around;
     .home-btns-wrap {
       display: flex;
       flex-wrap: nowrap;
       justify-content: space-between;
     }
-    // overflow-x: auto;
 
     .browser {
       display: flex;
       align-items: center;
       flex-shrink: 0;
-      margin: 0 20px;
+      margin: 0 10px;
       .browser-btn {
         display: block;
-        width: 14px;
-        height: 14px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         cursor: pointer;
+        transition: all 0.2s;
         -webkit-app-region: no-drag;
-        &+.browser-btn {
-          margin-left: 5px;
+        & + .browser-btn {
+          margin-left: 6px;
+        }
+        &:hover {
+          transform: scale(1.2);
         }
       }
-      
+
       .browser-red {
         background-color: #fb4648;
       }
       .browser-yellow {
         background-color: #fbb323;
       }
-      .browser-blue {
+      .browser-green {
         background-color: #2cc232;
       }
     }
 
     .module-btns {
       display: flex;
+      align-items: center;
       flex-shrink: 0;
       margin: 0 10px;
       -webkit-app-region: no-drag;
-      span {
+      .home-top-btn {
         display: block;
-        height: 26px;
+        height: 24px;
         padding: 0 10px;
-        line-height: 26px;
+        line-height: 24px;
         cursor: pointer;
-        border-top: 1px solid #bbb;
-        border-bottom: 1px solid #bbb;
         transition: all 0.2;
-        color: #6c6c6c;
-        background: #efefef;
-        & + span {
-          border-left: 1px solid #bbb;
-        }
+        color: #fff;
+        background: rgba(0, 0, 0, 0.2);
+        font-size: 14px;
 
         &:first-of-type {
-          border-left: 1px solid #bbb;
-          border-radius: 6px 0 0 6px;
+          border-top-left-radius: 6px;
+          border-bottom-left-radius: 6px;
         }
+
         &:last-of-type {
-          border-right: 1px solid #bbb;
-          border-radius: 0 6px 6px 0;
+          border-top-right-radius: 6px;
+          border-bottom-right-radius: 6px;
         }
 
         &:hover {
-          background-color: #fff;
-          // border-color: transparent;
+          background: rgba(255, 255, 255, 0.4);
         }
 
         &.active {
-          background-color: #6a6a6a;
-          border-color: transparent;
-          color: #fff;
+          background-color: #ffffff;
+          color: var(--linear-start-color);
+        }
+      }
+      .search-top-btn {
+        padding: 0 10px 0 0;
+        overflow: hidden;
+        background-color: #fff;
+        &:hover {
+          background-color: #fff;
+        }
+        .search-input {
+          width: 160px;
+          padding: 0;
+          -webkit-app-region: no-drag;
+          /deep/.el-input__inner {
+            height: 24px;
+            padding: 0 10px;
+            border-radius: 0;
+            line-height: 24px;
+            border: none;
+            vertical-align: top;
+            padding: 0;
+            font-size: 11px;
+            &::placeholder {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+      .search-enter-active {
+        animation: searchInputEnter 0.15s;
+      }
+      .search-leave-active {
+        animation: searchInputLeave 0.15s;
+      }
+      @keyframes searchInputEnter {
+        from {
+          width: 0;
+          opacity: 0;
+        }
+        to {
+          width: 160px;
+          opacity: 1;
+        }
+      }
+      @keyframes searchInputLeave {
+        from {
+          width: 160px;
+          opacity: 1;
+        }
+        to {
+          width: 0;
+          opacity: 0;
         }
       }
     }
     .home-btns-left {
-      // width: 200px;
       display: flex;
       justify-content: center;
     }
     .home-btns-middle {
-      // width: 300px;
       display: flex;
       justify-content: center;
     }
     .home-btns-right {
-      flex: 1;
       display: flex;
-      justify-content: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      padding-right: 20px;
     }
   }
   .home-content {
@@ -311,57 +462,39 @@ export default {
     flex: 1;
     display: flex;
     overflow: hidden;
-    border-top: 1px solid #f1f1f1;
   }
 }
-.editor {
+.editor-wrap {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   border-left: 1px solid #ccc;
   background-color: #fff;
+  .editor-container {
+    flex: 1;
+    overflow: hidden;
+    border: none;
+    position: relative;
+    /deep/.ql-container {
+      border: none;
+    }
+  }
 }
-.toolbar {
-  -webkit-app-region: no-drag;
-  /deep/.w-e-bar {
-    padding: 0;
-    flex-wrap: nowrap;
-    background-color: transparent;
-    > .w-e-bar-item {
-      &:first-of-type, &:first-of-type button {
-        border-radius: 6px 0 0 6px;
-      }
-      &:last-of-type, &:last-of-type button {
-        border-radius: 0 6px 6px 0;
-      }
-    }
-    .w-e-bar-item {
-      height: 28px;
-      padding: 0;
-      background: #efefef;
-      -webkit-app-region: no-drag;
-      // border-right: 1px solid #bbb;
 
-      button {
-        width: 100%;
-        height: 28px;
-        padding: 0 8px;
-        line-height: 28px;
-        align-items: center;
-        color: #6c6c6c;
-        user-select: none;
-        &:hover {
-          background-color: #fff;
-          color: #333;
-        }
-      }
-      .w-e-bar-item-menus-container {
-        margin-top: 26px;
-        left: auto;
-        right: 0;
-      }
-    }
-
+.title {
+  height: 24px;
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-bottom: 1px solid #eee;
+  .title-input {
+    width: 100%;
+    height: 24px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: 400;
   }
 }
 </style>
