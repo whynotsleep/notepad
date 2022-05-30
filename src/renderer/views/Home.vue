@@ -77,27 +77,30 @@
         :style="articleStyle"
         :searchContent="searchContent"
       ></Articles>
-      <div id="editor" class="editor-wrap">
-        <div class="title">
-          <input
-            v-if="currentArticle"
-            type="text"
-            class="title-input"
-            placeholder="请输入标题"
-            v-model="title"
-            @input="titleInput"
+      <div class="editor-wrap">
+        <div id="editor" class="editor-content">
+          <div class="title">
+            <input
+              v-if="currentArticle"
+              type="text"
+              class="title-input"
+              placeholder="请输入标题"
+              v-model="title"
+              @input="titleInput"
+            />
+          </div>
+
+          <quill-editor
+            v-show="currentArticle"
+            ref="myQuillEditor"
+            class="editor-container"
+            :content="html"
+            :options="editorOption"
+            @change="onChange($event)"
           />
         </div>
-
-        <quill-editor
-          v-show="currentArticle"
-          ref="myQuillEditor"
-          class="editor-container"
-          :content="html"
-          :options="editorOption"
-          @change="onChange($event)"
-        />
       </div>
+
     </div>
   </div>
 </template>
@@ -204,6 +207,8 @@ export default {
   created() {},
 
   mounted() {
+    // 关闭拼写检查
+    this.$refs.myQuillEditor && this.$refs.myQuillEditor.quill.root.setAttribute('spellcheck', false)
     document.body.addEventListener("click", this.bodyClick)
   },
 
@@ -466,19 +471,28 @@ export default {
 }
 .editor-wrap {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   height: 100%;
+  padding: 0 3px;
   overflow: hidden;
   border-left: 1px solid #ccc;
   background-color: #fff;
+  .editor-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
   .editor-container {
     flex: 1;
+    margin: 5px 0;
     overflow: hidden;
     border: none;
     position: relative;
     /deep/.ql-container {
       border: none;
+      .ql-editor {
+        padding: 7px 10px;
+      }
     }
   }
 }

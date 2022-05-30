@@ -21,6 +21,10 @@
 .editor-wrap {
     ul,ol {
         list-style: initial;
+        li {
+            padding: 5.5px 0 5.5px 3px;
+            line-height: 1.6em;
+        }
     }
     ul {
         list-style-type: disc;
@@ -53,5 +57,19 @@
         font-family: monospace;
         white-space: pre;
         margin: 1em 0px;
-    }    
+    }
+    h1,h2,h3,h4,h5,h6 {
+        font-weight: 700;
+        padding: 0.6em 0 3px;
+    }
+    p {
+        padding: 0.4em;
+        line-height: 1.5;
+    }
+}
+
+.ql-snow {
+    .ql-stroke {
+        stroke: #515151;
+    }
 }
